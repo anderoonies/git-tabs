@@ -16,5 +16,5 @@ control+option+command+l
 ```
 
 ### Reference
-https://discuss.atom.io/t/load-developing-package/2554
-https://atom.io/docs/latest/hacking-atom-package-atom-package-boilerplate
+- https://discuss.atom.io/t/load-developing-package/2554
+- https://atom.io/docs/latest/hacking-atom-package-atom-package-boilerplate

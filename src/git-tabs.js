@@ -3,25 +3,30 @@ var CompositeDisposable = require('atom').CompositeDisposable;
 var git = require('./git');
 
 var GitTabs = {
-    // var modalPanel;
-    // var subscriptions;
 
-    var activate = function(state) {
-        this.subscriptions
-            .add(atom.commands
-                     .add('atom-workspace', 'git-tabs:toggle', this.toggle()));
-    };
+    subscriptions: null,
 
-    var deactivate = function() {
-        this.subscriptions.destroy()
-    };
-
-    var toggle = function() {
+    toggle: function() {
         console.log('GitTabs was toggled!');
         console.log(git.hasGit());
         console.log(git.getMainRepo());
         console.log(git.getBranch());
-    };
+    },
+
+    activate: function(state) {
+        this.subscriptions = new CompositeDisposable;
+        return this.subscriptions.add(atom.commands.add('atom-workspace', {
+          'git-tabs:toggle': (function(_this) {
+            return function() {
+              return _this.toggle();
+            };
+          })(this)
+      }));
+    },
+
+    deactivate: function() {
+        this.subscriptions.destroy()
+    },
 };
   // activate: (state) ->
   //   @boobahView = new BoobahView(state.boobahViewState)

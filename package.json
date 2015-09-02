@@ -1,13 +1,13 @@
 {
-  "name": "atom-package-boilerplate",
+  "name": "git-tabs",
   "main": "./lib/index",
   "version": "0.0.0",
-  "description": "A short description of your package",
+  "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {
-    "atom-workspace": "atom-package-boilerplate:toggle"
+    "atom-workspace": "git-tabs:toggle"
   },
-  "repository": "https://github.com/john-kelly/atom-package-boilerplate",
+  "repository": "https://github.com/anderoonies/git-tabs",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"

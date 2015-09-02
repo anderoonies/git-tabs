@@ -1,5 +1,0 @@
-{
-  ".editor": {
-    "cmd-shift-a": "atom-package-boilerplate:do-thing"
-  }
-}

@@ -2,20 +2,12 @@
  * Main file for interfacing with git.
  */
 
-var Git = {};
+const hasGit = () => atom.project.getRepositories().length > 0;
+const getMainRepo = () => hasGit() ? atom.project.getRepositories()[0] : null;
+const getBranch = () => getMainRepo().getShortHead();
 
-Git.hasGit = function() {
-    return atom.project.getRepositories().length > 0;
-}
-
-Git.getMainRepo = function() {
-    if (this.hasGit()) {
-        return atom.project.getRepositories()[0];
-    }
-}
-
-Git.getBranch = function() {
-    return this.getMainRepo().getShortHead();
-}
-
-module.exports = Git;
+module.exports = {
+    hasGit,
+    getMainRepo,
+    getBranch,
+};

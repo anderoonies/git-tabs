@@ -12,8 +12,8 @@ module.exports = GitTabs =
     # Register command that toggles this view
     @subscriptions.add atom.commands.add 'atom-workspace', 'git-tabs:toggle': => @toggle()
     # Set up git subscriptions
-    subscribeToRepositories()
-    
+    @subscribeToRepositories()
+
   deactivate: ->
     @subscriptions.dispose()
 
@@ -21,6 +21,7 @@ module.exports = GitTabs =
     @repoSubscriptions?.dispose()
     @repoSubscriptions = new CompositeDisposable
 
+    console.log 'called'
     for repo in git.getRepositories() when repo?
       console.log repo
       @repoSubscriptions.add repo.onDidChangeStatus ({path, status}) =>

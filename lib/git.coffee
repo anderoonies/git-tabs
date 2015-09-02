@@ -14,3 +14,6 @@ module.exports =
       return getMainRepo.getShortHead()
     else
       return null
+
+  getRepositories: ->
+    return atom.project.getRepositories()

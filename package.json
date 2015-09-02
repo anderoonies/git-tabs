@@ -1,6 +1,6 @@
 {
   "name": "git-tabs",
-  "main": "./lib/index",
+  "main": "./src/git-tabs",
   "version": "0.0.0",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],

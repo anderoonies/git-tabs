@@ -27,11 +27,6 @@ module.exports = GitTabs =
   toggle: ->
     console.log 'GitTabs was toggled!'
 
-    if @modalPanel.isVisible()
-      @modalPanel.hide()
-    else
-      @modalPanel.show()
-
   handleStatusChange: ({path, status}) ->
     console.log 'Status changed'
     console.log path

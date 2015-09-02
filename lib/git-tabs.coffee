@@ -24,13 +24,14 @@ module.exports = GitTabs =
     console.log 'called'
     for repo in git.getRepositories() when repo?
       console.log repo
-      @repoSubscriptions.add repo.onDidChangeStatus ({path, status}) =>
-        @handleStatusChange({path, status})
+      @repoSubscriptions.add repo.onDidChangeStatus ({path, pathStatus}) =>
+        console.log 'i was called down here'
+        @handleStatusChange(path, pathStatus)
 
   toggle: ->
     console.log 'GitTabs was toggled!'
 
-  handleStatusChange: ({path, status}) ->
+  handleStatusChange: (path, pathStatus) ->
     console.log 'Status changed'
     console.log path
-    console.log status
+    console.log pathStatus

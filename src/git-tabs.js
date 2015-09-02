@@ -16,12 +16,12 @@ var GitTabs = {
     activate: function(state) {
         this.subscriptions = new CompositeDisposable;
         return this.subscriptions.add(atom.commands.add('atom-workspace', {
-          'git-tabs:toggle': (function(_this) {
-            return function() {
-              return _this.toggle();
-            };
-          })(this)
-      }));
+            'git-tabs:toggle': (function(_this) {
+                return function() {
+                    return _this.toggle();
+                };
+            })(this)
+        }));
     },
 
     deactivate: function() {

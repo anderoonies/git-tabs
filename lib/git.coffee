@@ -4,14 +4,15 @@ module.exports =
     return atom.project.getRepositories().length > 0
 
   getMainRepo: ->
-    if hasGit()
+    if @hasGit()
       return atom.project.getRepositories()[0]
     else
       return null
 
   getBranch: ->
-    if hasGit()
-      return getMainRepo.getShortHead()
+    console.log 'i am here :^)'
+    if @hasGit()
+      return @getMainRepo().getShortHead()
     else
       return null
 

@@ -1,9 +1,0 @@
-{
-  /*Airbnb ES6 w/o React*/
-  "extends": "airbnb/base",
-
-  "rules": {
-    /*4 Space Indent*/
-    "indent": [2, 4]
-  }
-}

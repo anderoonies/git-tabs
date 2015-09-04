@@ -6,9 +6,13 @@ path = require 'path'
 # This is done by watching git files
 module.exports =
   emitter: null
+  gitFiles: null
 
   create: ->
     @emitter = new Emitter
+    @gitFiles = []
+
+    @getGitFiles()
     @watchBranches()
 
   destroy: ->
@@ -17,13 +21,22 @@ module.exports =
   onDidChangeBranch: (callback) ->
     @emitter.on 'did-change-branch', callback
 
-  watchBranches: ->
+  getGitFiles: ->
     gitPaths = @getRepositories()
     for gitPath in gitPaths
       gitFile = new File gitPath
+      @gitFiles.push(gitFile)
+
+  watchBranches: ->
+    for gitFile in @gitFiles when gitFile?
       gitFile.onDidChange =>
         @emitter.emit 'did-change-branch', {branch: gitFile.read()}
 
   getRepositories: ->
-      gitPaths = atom.project.getPaths()
-      return (projectPath + '/.git/HEAD' for projectPath in gitPaths)
+    gitPaths = atom.project.getPaths()
+    return (projectPath + '/.git/HEAD' for projectPath in gitPaths)
+
+  getBranch: ->
+    @gitFiles?[0].read().then((content) ->
+      return content
+    )

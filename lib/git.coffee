@@ -5,7 +5,6 @@ path = require 'path'
 # Where git is interfaced
 # This is done by watching git files
 module.exports =
-  branchWatcher: null
   emitter: null
 
   create: ->

@@ -22,7 +22,7 @@ module.exports =
     for gitPath in gitPaths
       gitFile = new File gitPath
       gitFile.onDidChange =>
-        @emitter.emit 'did-change-branch', {branch: fs.readFileSync(gitPath).toString()}
+        @emitter.emit 'did-change-branch', {branch: gitFile.read()}
 
   getRepositories: ->
       gitPaths = atom.project.getPaths()

@@ -37,4 +37,5 @@ module.exports =
     console.log 'GitTabs was toggled!'
 
   handleBranchChange: (data) ->
-    console.log data
+    data.branch.then((contents) ->
+      console.log contents)

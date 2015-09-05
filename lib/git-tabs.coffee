@@ -29,16 +29,17 @@ module.exports =
     @subscribeToRepositories()
 
     # subscribe to adding tabs
-    @subscriptions.add atom.workspace.onDidAddPaneItem (tab) =>
-      @handleNewTab(tab)
+    @subscriptions.add atom.workspace.onDidAddPaneItem (data) =>
+      @handleNewTab(data)
 
-    @subscriptions.add atom.workspace.onWillDestroyPaneItem (tab) =>
-      @handleDestroyedTab(tab)
+    @subscriptions.add atom.workspace.onDidDestroyPaneItem (data) =>
+      @handleRemovedTab(data)
 
   deactivate: ->
     @subscriptions.dispose()
     @repoSubscriptions.dispose()
     @git.destroy()
+    @clearTabs()
 
   getStorageDir: ->
     return process.env.ATOM_HOME + '/git-tabs'
@@ -68,13 +69,13 @@ module.exports =
       for tab, i in atom.workspace.paneContainer.activePane.items
         @storeTab(tab, branchName, i)
 
-  handleNewTab: (tab) ->
+  handleNewTab: (data) ->
     @git.getBranch().then (branchName) =>
-      @storeTab(tab, branchName)
+      @storeTab(data.item, branchName, data.index)
 
-  handleDestroyedTab: (data) ->
+  handleRemovedTab: (data) ->
     @git.getBranch().then (branchName) =>
-      @unstoreTab(tab, branchName)
+      @unstoreTab(data.item, branchName)
 
   storeTab: (tab, branchName, index) ->
     if tabs = @storageFolder.load 'tabs.json'
@@ -87,12 +88,7 @@ module.exports =
       @storageFolder.store('tabs.json', tabs)
 
   unstoreTab: (tab, branchName) ->
-    if (tabs = @storageFolder.load('tabs.json'))?.length > 0
+    if tabs = @storageFolder.load 'tabs.json'
       if tabs[branchName]
         delete tabs[branchName][tab.id]
-
-  destroyPaneItem: (data) ->
-    console.log 'destroying pane item'
-
-  toggle: ->
-    console.log 'toggled'
+    @storageFolder.store('tabs.json', tabs)

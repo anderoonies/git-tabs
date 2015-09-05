@@ -43,20 +43,20 @@ module.exports =
     # subscribe to tab events
     @subscriptions.add @activePane.onDidAddItem (event) =>
       @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleNewTab(event, repo.branch)
+        @handleNewTab(event, repo.getShortHead())
 
     @subscriptions.add @activePane.onDidChangeActiveItem (tab) =>
       @git.getRepoForFile(@getItemPath(tab)).then (repo) =>
-        @handleChangedActiveTab(tab, repo.branch)
+        @handleChangedActiveTab(tab, repo.getShortHead())
 
     @subscriptions.add @activePane.onDidMoveItem (event) =>
       @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleMovedTab(event, repo.branch)
+        @handleMovedTab(event, repo.getShortHead())
 
     @subscriptions.add atom.workspace.onWillDestroyPaneItem (event) =>
       # gotta copy this one so it's not destroyed
       @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleRemovedTab(event, repo.branch)
+        @handleRemovedTab(event, repo.getShortHead())
 
   deactivate: ->
     @subscriptions.dispose()
@@ -78,6 +78,7 @@ module.exports =
 
   handleBranchChange: (data) ->
     data.branch.then((branchName) =>
+      console.log "switching to #{branchName}"
       @storeTabs()
       @clearTabs()
       @loadTabs(branchName)
@@ -134,11 +135,9 @@ module.exports =
         atom.workspace.paneContainer.activePane.setActiveItem tab
 
   saveTab: (tab, index) ->
-    console.log 'calling saveTab with '
-    console.log tab
     tabFilePath = @getItemPath tab
     @git.getRepoForFile(tabFilePath).then (repo) =>
-      branch = repo.branch
+      branch = repo.getShortHead()
       isActive = atom.workspace.getActivePaneItem() == tab ? false
       if not @tabs[branch]
         @tabs[branch] = {}

@@ -29,7 +29,6 @@ module.exports =
 
   watchBranches: ->
     for gitFile in @gitFiles
-      console.log 'wathcing them branches'
       gitFile.onDidChange =>
         @emitter.emit 'did-change-branch', {branch: gitFile.read()}
 

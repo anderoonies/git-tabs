@@ -1,6 +1,6 @@
-fs = require 'fs'
+fs = require 'fs-plus'
 path = require 'path'
-{Emitter, File} = require 'atom'
+{Emitter, File, Directory} = require 'atom'
 
 # Where git is interfaced
 # This is done by watching git files
@@ -36,5 +36,7 @@ module.exports =
     gitPaths = atom.project.getPaths()
     return (projectPath + '/.git/HEAD' for projectPath in gitPaths)
 
-  getBranch: ->
-    return @gitFiles[0].read()
+  getBranchForFile: (filePath) ->
+    atom.project.repositoryForDirectory(new Directory(path.dirname(filePath)))
+	   .then (repository) =>
+       return repository.getShortHead()

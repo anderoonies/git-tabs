@@ -67,34 +67,33 @@ module.exports =
         atom.workspace.paneContainer.activePane.setActiveItem(tab)
 
   storeTabs: ->
-    @git.getBranch().then (branchName) =>
-      for tab, i in atom.workspace.paneContainer.activePane.items
-        if atom.workspace.paneContainer.activePane.activeItem == tab
-          @storeTab(tab, branchName, i, true)
-        else
-          @storeTab(tab, branchName, i, false)
+    for tab, i in atom.workspace.paneContainer.activePane.items
+      if atom.workspace.paneContainer.activePane.activeItem == tab
+        @storeTab(tab, i, true)
+      else
+        @storeTab(tab, i, false)
 
   handleNewTab: (data) ->
-    @git.getBranch().then (branchName) =>
-      @storeTab(data.item, branchName, data.index)
+    @storeTab(data.item, branchName, data.index)
 
   handleRemovedTab: (data) ->
-    @git.getBranch().then (branchName) =>
-      @unstoreTab(data.item, branchName)
+    @unstoreTab(data.item, branchName)
 
-  storeTab: (tab, branchName, index, isActive) ->
-    if tabs = @storageFolder.load 'tabs.json'
-      if not tabs[branchName]
-        tabs[branchName] = {}
-      tabs[branchName][tab.id] =
-        'index': index
-        'active': isActive
-        'tab': tab.serialize()
+  storeTab: (tab, index, isActive) ->
+    @git.getBranchForFile(tab.buffer.file.path).then (branch) =>
+      if tabs = @storageFolder.load 'tabs.json'
+        if not tabs[branch]
+          tabs[branch] = {}
+        tabs[branch][tab.id] =
+          'index': index
+          'active': isActive
+          'tab': tab.serialize()
 
+        @storageFolder.store('tabs.json', tabs)
+
+  unstoreTab: (tab) ->
+    @git.getBranchForFile(tab.buffer.file.path).then (branch) =>
+      if tabs = @storageFolder.load 'tabs.json'
+        if tabs[branch]
+          delete tabs[branch][tab.id]
       @storageFolder.store('tabs.json', tabs)
-
-  unstoreTab: (tab, branchName) ->
-    if tabs = @storageFolder.load 'tabs.json'
-      if tabs[branchName]
-        delete tabs[branchName][tab.id]
-    @storageFolder.store('tabs.json', tabs)

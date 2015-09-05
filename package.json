@@ -12,7 +12,8 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "coffeelint": "^1.11.1"
+    "coffeelint": "^1.11.1",
+    "fs-plus": "^2.8.0"
   },
   "scripts": {}
 }

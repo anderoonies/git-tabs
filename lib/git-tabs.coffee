@@ -36,7 +36,6 @@ module.exports =
     # Save the current tabs
     @saveTabs()
 
-
     # Set up git subscriptions
     @subscribeToRepositories()
 
@@ -80,6 +79,8 @@ module.exports =
       @storeTabs()
       @clearTabs()
       @loadTabs(branchName)
+      console.log 'check out the new tabs!'
+      console.log @tabs
     )
 
   handleRemovedTab: (event) ->
@@ -128,11 +129,11 @@ module.exports =
       @saveTab(tab, i)
 
   storeTabs: ->
-    @storeageFolder.store('tabs.json', @tabs)
+    @storageFolder.store('tabs.json', @tabs)
 
-  loadTabs: (branchName) ->
-    items = @storageFolder.load('tabs.json').branchName
-    for id, item of items
+  loadTabs: (branch) ->
+    @tabs = @storageFolder.load('tabs.json')
+    for id, item of @tabs[branch]
       deserializedTab = atom.deserializers.deserialize item.tab
       atom.workspace.paneContainer.activePane.addItem deserializedTab, item.index
       if item.active
@@ -154,10 +155,10 @@ module.exports =
     tabFilePath = @getItemPath tab
     @git.getRepoForFile(tabFilePath).then (repo) =>
       branch = repo.getShortHead()
-      for id, item in @tabs[branch]
+      for id, item in @tabs[branch]?
         if item.index < tab.index
           @tabs[branch][id][index]--
-      delete @tabs[branch][tab.id]
+      delete @tabs[branch][tab.id]?
 
   getItemPath: (item) ->
     return item.buffer?.file.path

@@ -37,6 +37,4 @@ module.exports =
     return (projectPath + '/.git/HEAD' for projectPath in gitPaths)
 
   getBranch: ->
-    @gitFiles?[0].read().then((content) ->
-      return content
-    )
+    return @gitFiles[0].read()

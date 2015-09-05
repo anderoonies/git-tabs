@@ -1,5 +1,5 @@
 {CompositeDisposable} = require 'atom'
-
+StorageFolder = require './storage-folder'
 git = require './git'
 
 module.exports =
@@ -18,10 +18,11 @@ module.exports =
     # Set up git stuff
     @git = git
     @git.create()
-    @branch = @git.getBranch()
 
     # Set up storageFolder
-    @storageFolder = new StorageFolder(@getStorageDir)
+    @storageFolder = new StorageFolder @getStorageDir()
+    if not @storageFolder.load('tabs.json')
+      @storageFolder.store('tabs.json', {})
 
     @storeTabs()
 
@@ -29,11 +30,11 @@ module.exports =
     @subscribeToRepositories()
 
     # subscribe to adding panels
-    @subscriptions.add atom.workspace.onDidAddPaneItem (data) ->
-      @handleNewTab(data)
+    @subscriptions.add atom.workspace.onDidAddPaneItem (tab) ->
+      @handleNewTab(tab)
 
-    @subscriptions.add atom.workspace.onWillDestroyPaneItem (data) ->
-      @handleDestroyedTab(data)
+    @subscriptions.add atom.workspace.onWillDestroyPaneItem (tab) ->
+      @handleDestroyedTab(tab)
 
   deactivate: ->
     @subscriptions.dispose()
@@ -41,18 +42,18 @@ module.exports =
     @git.destroy()
 
   getStorageDir: ->
-    return path.join(process.env.ATOM_HOME + '/git-tabs')
+    return process.env.ATOM_HOME + '/git-tabs'
 
   subscribeToRepositories: ->
     @git.onDidChangeBranch (data) =>
       @handleBranchChange(data)
 
   handleBranchChange: (data) ->
-    data.branch.then((contents) ->
+    data.branch.then((branchName) ->
       @branch = contents
       @clearTabs()
-      @loadTabs(contents)
-    ))
+      @loadTabs(branchName)
+    )
 
   clearTabs: ->
     # kill all the tabs
@@ -60,20 +61,37 @@ module.exports =
 
   loadTabs: (branchName) ->
     items = @storageFolder.load('tabs.json')[branchName]
-    atom.workspace.activePane.addItems(items)
+    atom.workspace.paneContainer.activePane.addItems(items)
 
   storeTabs: ->
-    for tab in atom.workspace.activePane.items when tab?
-      @storePaneItem(tab)
+    @git.getBranch().then (branchName) =>
+      console.log 'branch name [promise resolved]'
+      console.log branchName
 
-  handleNewTab: (data) ->
-    @storePaneItem(tab)
+      for tab in atom.workspace.paneContainer.activePane.items
+        @storeTab(tab, branchName)
 
-  storePaneItem: (tab) ->
-    tabsJson = @storageFolder.load('tabs.json')
-    if not tab.id of tabsJson[@branch]
-      tabsJson[@branch][tab.id] = tab.serialize()
-    @storageFolder.store(tabsJson)
+  handleNewTab: (tab) ->
+    @storeTab(tab)
+
+  handleDestroyedTab: (data) ->
+    @unstoreTab(tab)
+
+  storeTab: (tab, branchName) ->
+    console.log 'store tab called'
+    if (tabs = @storageFolder.load('tabs.json'))
+      if not tabs[branchName]
+        tabs[branchName] = {}
+      tabs[branchName][tab.id] = tab.serialize()
+      @storageFolder.store('tabs.json', tabs)
+
+  unstoreTab: (tab) ->
+    if (tabs = @storageFolder.load('tabs.json'))?.length > 0
+      if tabs[@branch]
+        delete tabs[@branch][tab.id]
 
   destroyPaneItem: (data) ->
     console.log 'destroying pane item'
+
+  toggle: ->
+    console.log 'toggled'

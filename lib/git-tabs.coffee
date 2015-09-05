@@ -59,14 +59,14 @@ module.exports =
 
   loadTabs: (branchName) ->
     items = @storageFolder.load('tabs.json')[branchName]
-    for id, tab of items
-      deserializedTab = atom.deserializers.deserialize(tab)
-      atom.workspace.paneContainer.activePane.addItem(deserializedTab)
+    for id, item of items
+      deserializedTab = atom.deserializers.deserialize(item.tab)
+      atom.workspace.paneContainer.activePane.addItem(deserializedTab, item.index)
 
   storeTabs: ->
     @git.getBranch().then (branchName) =>
-      for tab in atom.workspace.paneContainer.activePane.items
-        @storeTab(tab, branchName)
+      for tab, i in atom.workspace.paneContainer.activePane.items
+        @storeTab(tab, branchName, i)
 
   handleNewTab: (tab) ->
     @git.getBranch().then (branchName) =>
@@ -76,11 +76,14 @@ module.exports =
     @git.getBranch().then (branchName) =>
       @unstoreTab(tab, branchName)
 
-  storeTab: (tab, branchName) ->
-    if (tabs = @storageFolder.load('tabs.json'))
+  storeTab: (tab, branchName, index) ->
+    if tabs = @storageFolder.load 'tabs.json'
       if not tabs[branchName]
         tabs[branchName] = {}
-      tabs[branchName][tab.id] = tab.serialize()
+      tabs[branchName][tab.id] =
+        'index': index
+        'tab': tab.serialize()
+
       @storageFolder.store('tabs.json', tabs)
 
   unstoreTab: (tab, branchName) ->

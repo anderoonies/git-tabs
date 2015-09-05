@@ -4,17 +4,13 @@
   "version": "0.0.0",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
-  "activationCommands": {
-    "atom-workspace": "git-tabs:toggle"
-  },
+  "activationCommands": {},
   "repository": "https://github.com/anderoonies/git-tabs",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
-  "dependencies": {
-    "fs-plus": "^2.8.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "coffeelint": "^1.11.1"
   },

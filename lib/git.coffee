@@ -28,7 +28,8 @@ module.exports =
       @gitFiles.push(gitFile)
 
   watchBranches: ->
-    for gitFile in @gitFiles when gitFile?
+    for gitFile in @gitFiles
+      console.log 'wathcing them branches'
       gitFile.onDidChange =>
         @emitter.emit 'did-change-branch', {branch: gitFile.read()}
 
@@ -36,7 +37,6 @@ module.exports =
     gitPaths = atom.project.getPaths()
     return (projectPath + '/.git/HEAD' for projectPath in gitPaths)
 
-  getBranchForFile: (filePath) ->
-    atom.project.repositoryForDirectory(new Directory(path.dirname(filePath)))
-	   .then (repository) =>
-       return repository.getShortHead()
+  getRepoForFile: (filePath) ->
+    return atom.project
+               .repositoryForDirectory(new Directory(path.dirname(filePath)))

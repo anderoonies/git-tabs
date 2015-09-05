@@ -8,7 +8,8 @@ module.exports =
   subscriptions: null
   repoSubscriptions: null
   git: null
-  activeSpace: null
+  activePane: null
+  branch: null
 
   activate: ->
     @subscriptions = new CompositeDisposable
@@ -19,41 +20,44 @@ module.exports =
     # Set up git stuff
     @git = git
     @git.create()
+    @git.getRepoForFile(@getActiveItemPath).then (repo) =>
+      @branch = repo.branch
 
     # Set up storageFolder
     @storageFolder = new StorageFolder @getStorageDir()
     if not fs.existsSync(@storageFolder.getPath() + '/tabs.json')
       @storageFolder.store('tabs.json', {})
 
-    @storeTabs()
+    # Set up the active pane
+    @activePane = atom.workspace.paneContainer.activePane
+
 
     # Set up git subscriptions
     @subscribeToRepositories()
 
     # subscribe to tab events
-    @subscriptions.add
-    atom.workspace.paneContainer.activePane.onDidAddItem (event) =>
-      @git.getBranchForFile(@getItemPath(event.item)).then (branch) =>
-        @handleNewTab(item, index, branch)
+    @subscriptions.add @activePane.onDidAddItem (event) =>
+      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
+        @handleNewTab(event, repo.branch)
 
-    @subscriptions.add
-    atom.workspace.paneContainer.activePane.onDidChangeActiveItem (tab) =>
-      @git.getBranchForFile(@getItemPath(tab)).then (branch) =>
-        @handleChangedActiveTab(tab, branch)
+    @subscriptions.add @activePane.onDidChangeActiveItem (tab) =>
+      @git.getRepoForFile(@getItemPath(tab)).then (repo) =>
+        @handleChangedActiveTab(tab, repo.branch)
 
-    @subscriptions.add
-    atom.workspace.paneContainer.activePane.onDidMoveItem (event) =>
-      @git.getBranchForFile(@getItemPath(event.item)).then (branch) =>
-        @handleMovedTab(event, branch)
+    @subscriptions.add @activePane.onDidMoveItem (event) =>
+      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
+        @handleMovedTab(event, repo.branch)
 
-    @subscriptions.add
-    atom.workspace.paneContainer.activePane.onDidRemoveItem (event) =>
-      @handleRemovedTab(event)
+    @subscriptions.add atom.workspace.onWillDestroyPaneItem (event) =>
+      # gotta copy this one so it's not destroyed
+      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
+        @handleRemovedTab(event, repo.branch)
 
   deactivate: ->
     @subscriptions.dispose()
     @repoSubscriptions.dispose()
     @git.destroy()
+    @storeTabs
     @clearTabs()
 
   getStorageDir: ->
@@ -62,63 +66,63 @@ module.exports =
   subscribeToRepositories: ->
     @git.onDidChangeBranch (data) =>
       @handleBranchChange(data)
-    console.log 'subscribed to my repos!'
 
-  handleNewTab: (item, index, branch) ->
-    @storeTab(item, index, branch)
+  handleNewTab: (event, branch) ->
+    tab.active = false for tab in @tabs.branch if tab != event.item
+    @saveTab(event.item, event.index, branch)
 
   handleBranchChange: (data) ->
     data.branch.then((branchName) =>
-      console.log "Handling switch to #{branchName}"
+      @storeTabs()
       @clearTabs()
       @loadTabs(branchName)
     )
 
-  handleRemovedTab: (event) ->
-    @unstoreTab(event.item)
+  handleRemovedTab: (event, branch) ->
+    @unsaveTab(event.item)
 
   handleMovedTab: (event, branch) ->
-    items = @storageFolder.load('tabs.json').branch
     # the user moved the tab to the left
     if event.newIndex < event.oldIndex
-      for id, item in items
+      for id, item in @tabs.branch
         # update the tab with its new index
         if item.tab == event.item
-          item.index = event.newIndex
+          @tabs.branch.id.index = event.newIndex
         # all tabs to the right have new indices
         else if item.index > event.newIndex
-          items.item.index++
+          @tabs.branch.id.index++
     # the user moved the tab to the right
     else
-      for id, item in items
+      for id, item in @tabs.branch
         #update the tab with its new index
         if item.tab == event.item
-          item.index = event.newIndex
+          @tabs.branch.id.index = event.newIndex
         # all tabs to the right have new index
         else if item.index > event.newIndex
-          items.item.index--
+          @tabs.branch.id.index--
 
   handleChangedActiveTab: (tab, branch) ->
-    console.log 'Handling changed active tab'
-    console.log tab
-
-    items = @storageFolder.load('tabs.json').branch
-    for id, item in items
+    console.log 'handling active tab. brk here'
+    for id, item in @tabs.branch
       if item.tab == tab
-        items.item.active = true
+        @tabs.branch.id.active = true
+        console.log 'new active tab'
       else
-        items.item.active = false
-    @storageFolder.store 'tabs.json'
+        @tabs.branch.id.active = false
 
   clearTabs: ->
     # kill all the tabs
     atom.workspace.paneContainer.activePane.destroyItems()
 
+  saveTabs: ->
+    for tab, i in @activePane.items
+      console.log "savetabs #{tab.id} - #{i}"
+      @git.getRepoForFile(@getItemPath tab).then (repo) =>
+        console.log "inside promise— #{tab.id} #{i}"
+        @saveTab(tab, i, repo.branch)
+
   storeTabs: ->
-    console.log 'in store tabs'
-    for tab, i in atom.workspace.paneContainer.activePane.items
-      @git.getBranchForFile(@getItemPath tab).then (branch) =>
-        @storeTab(tab, i, branch)
+    @storeageFolder.store('tabs.json', @tabs)
 
   loadTabs: (branchName) ->
     items = @storageFolder.load('tabs.json').branchName
@@ -128,27 +132,27 @@ module.exports =
       if item.active
         atom.workspace.paneContainer.activePane.setActiveItem tab
 
-  storeTab: (tab, index, branch) ->
-    console.log 'in storeTab'
-    isActive = atom.workspace.getActivePaneItem() ? false
-    if tabs = @storageFolder.load 'tabs.json'
-      if not tabs[branchName]
-        tabs[branchName] = {}
-      tabs[branchName][tab.id] =
-        'index': index
-        'active': isActive
-        'tab': tab.serialize()
-        
-    @storageFolder.store('tabs.json', tabs)
+  saveTab: (tab, index, branch) ->
+    console.log "saveTab #{tab.id} - #{index}"
+    isActive = atom.workspace.getActivePaneItem() == tab ? false
+    if not @tabs.branch
+      @tabs.branch = {}
+    @tabs.branch[tab.id] =
+      'index': index
+      'active': isActive
+      'tab': tab.serialize()
 
-  unstoreTab: (tab) ->
-    @git.getBranchForFile(@getItemPath tab).then (branch) =>
-      if tabs = @storageFolder.load 'tabs.json'
-        if tabs[branch]
-          delete tabs[branch][tab.id]
-      @storageFolder.store('tabs.json', tabs)
+  unsaveTab: (tab, branch) ->
+    for id, item in @tabs.branch
+      if item.index < tab.index
+        @tabs.branch.id.index--
+    delete @tabs.branch[tab.id]
 
   getItemPath: (item) ->
-    return item.buffer.file.path ? null
+    return item.buffer?.file.path ? null
 
-  toggle: -> console.log 'togle :)'
+  getActiveItemPath: ->
+    editor = atom.workspace.getActivePane()
+    return editor?.buffer.file
+
+  toggle: ->

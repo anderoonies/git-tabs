@@ -69,7 +69,7 @@ module.exports =
   storeTabs: ->
     @git.getBranch().then (branchName) =>
       for tab, i in atom.workspace.paneContainer.activePane.items
-        if atom.workspace.paneContainer.activePane.activeItem === tab
+        if atom.workspace.paneContainer.activePane.activeItem == tab
           @storeTab(tab, branchName, i, true)
         else
           @storeTab(tab, branchName, i, false)

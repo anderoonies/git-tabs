@@ -74,10 +74,10 @@ module.exports =
         @storeTab(tab, i, false)
 
   handleNewTab: (data) ->
-    @storeTab(data.item, branchName, data.index)
+    @storeTab(data.item, data.index)
 
   handleRemovedTab: (data) ->
-    @unstoreTab(data.item, branchName)
+    @unstoreTab(data.item)
 
   storeTab: (tab, index, isActive) ->
     @git.getBranchForFile(tab.buffer.file.path).then (branch) =>

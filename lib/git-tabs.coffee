@@ -1,4 +1,4 @@
-{CompositeDisposable} = require 'atom'
+{CompositeDisposable, TextEditor} = require 'atom'
 StorageFolder = require './storage-folder'
 git = require './git'
 
@@ -58,13 +58,10 @@ module.exports =
     atom.workspace.paneContainer.activePane.destroyItems()
 
   loadTabs: (branchName) ->
-    console.log 'in load tabs'
     items = @storageFolder.load('tabs.json')[branchName]
-    console.log items
     for id, tab of items
-      console.log 'in here'
-      console.log tab
-      atom.workspace.paneContainer.activePane.addItem(tab.deserialize())
+      deserializedTab = atom.deserializers.deserialize(tab)
+      atom.workspace.paneContainer.activePane.addItem(deserializedTab)
 
   storeTabs: ->
     @git.getBranch().then (branchName) =>

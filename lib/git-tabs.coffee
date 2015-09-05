@@ -9,7 +9,7 @@ module.exports =
   repoSubscriptions: null
   git: null
   activePane: null
-  branch: null
+  tabs: null
 
   activate: ->
     @subscriptions = new CompositeDisposable
@@ -20,16 +20,21 @@ module.exports =
     # Set up git stuff
     @git = git
     @git.create()
-    @git.getRepoForFile(@getActiveItemPath).then (repo) =>
-      @branch = repo.branch
 
     # Set up storageFolder
     @storageFolder = new StorageFolder @getStorageDir()
     if not fs.existsSync(@storageFolder.getPath() + '/tabs.json')
       @storageFolder.store('tabs.json', {})
 
+
+    # Set up local cache for tabs
+    @tabs = {}
+
     # Set up the active pane
     @activePane = atom.workspace.paneContainer.activePane
+
+    # Save the current tabs
+    @saveTabs()
 
 
     # Set up git subscriptions
@@ -68,7 +73,7 @@ module.exports =
       @handleBranchChange(data)
 
   handleNewTab: (event, branch) ->
-    tab.active = false for tab in @tabs.branch if tab != event.item
+    tab.active = false for tab in @tabs[branch] if tab != event.item
     @saveTab(event.item, event.index, branch)
 
   handleBranchChange: (data) ->
@@ -84,31 +89,30 @@ module.exports =
   handleMovedTab: (event, branch) ->
     # the user moved the tab to the left
     if event.newIndex < event.oldIndex
-      for id, item in @tabs.branch
+      for id, item in @tabs[branch]
         # update the tab with its new index
         if item.tab == event.item
-          @tabs.branch.id.index = event.newIndex
+          @tabs[branch][id][index] = event.newIndex
         # all tabs to the right have new indices
         else if item.index > event.newIndex
-          @tabs.branch.id.index++
+          @tabs[branch][id][index]++
     # the user moved the tab to the right
     else
       for id, item in @tabs.branch
         #update the tab with its new index
         if item.tab == event.item
-          @tabs.branch.id.index = event.newIndex
+          @tabs[branch][id][index] = event.newIndex
         # all tabs to the right have new index
         else if item.index > event.newIndex
-          @tabs.branch.id.index--
+          @tabs[branch][id][index]--
 
   handleChangedActiveTab: (tab, branch) ->
-    console.log 'handling active tab. brk here'
-    for id, item in @tabs.branch
-      if item.tab == tab
-        @tabs.branch.id.active = true
+    for id, item of @tabs[branch]
+      if +id == tab.id
+        @tabs[branch][id]['active'] = true
         console.log 'new active tab'
       else
-        @tabs.branch.id.active = false
+        @tabs[branch][id]['active'] = false
 
   clearTabs: ->
     # kill all the tabs
@@ -116,10 +120,7 @@ module.exports =
 
   saveTabs: ->
     for tab, i in @activePane.items
-      console.log "savetabs #{tab.id} - #{i}"
-      @git.getRepoForFile(@getItemPath tab).then (repo) =>
-        console.log "inside promise— #{tab.id} #{i}"
-        @saveTab(tab, i, repo.branch)
+      @saveTab(tab, i)
 
   storeTabs: ->
     @storeageFolder.store('tabs.json', @tabs)
@@ -132,24 +133,28 @@ module.exports =
       if item.active
         atom.workspace.paneContainer.activePane.setActiveItem tab
 
-  saveTab: (tab, index, branch) ->
-    console.log "saveTab #{tab.id} - #{index}"
-    isActive = atom.workspace.getActivePaneItem() == tab ? false
-    if not @tabs.branch
-      @tabs.branch = {}
-    @tabs.branch[tab.id] =
-      'index': index
-      'active': isActive
-      'tab': tab.serialize()
+  saveTab: (tab, index) ->
+    console.log 'calling saveTab with '
+    console.log tab
+    tabFilePath = @getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.branch
+      isActive = atom.workspace.getActivePaneItem() == tab ? false
+      if not @tabs[branch]
+        @tabs[branch] = {}
+      @tabs[branch][tab.id] =
+        'index': index
+        'active': isActive
+        'tab': tab.serialize()
 
   unsaveTab: (tab, branch) ->
-    for id, item in @tabs.branch
+    for id, item in @tabs[branch]
       if item.index < tab.index
-        @tabs.branch.id.index--
-    delete @tabs.branch[tab.id]
+        @tabs[branch][id][index]--
+    delete @tabs[branch][tab.id]
 
   getItemPath: (item) ->
-    return item.buffer?.file.path ? null
+    return item.buffer?.file.path
 
   getActiveItemPath: ->
     editor = atom.workspace.getActivePane()

@@ -6,7 +6,6 @@ module.exports =
   subscriptions: null
   repoSubscriptions: null
   git: null
-  branch: null
   activeSpace: null
 
   activate: (state) ->
@@ -29,11 +28,11 @@ module.exports =
     # Set up git subscriptions
     @subscribeToRepositories()
 
-    # subscribe to adding panels
-    @subscriptions.add atom.workspace.onDidAddPaneItem (tab) ->
+    # subscribe to adding tabs
+    @subscriptions.add atom.workspace.onDidAddPaneItem (tab) =>
       @handleNewTab(tab)
 
-    @subscriptions.add atom.workspace.onWillDestroyPaneItem (tab) ->
+    @subscriptions.add atom.workspace.onWillDestroyPaneItem (tab) =>
       @handleDestroyedTab(tab)
 
   deactivate: ->
@@ -49,8 +48,7 @@ module.exports =
       @handleBranchChange(data)
 
   handleBranchChange: (data) ->
-    data.branch.then((branchName) ->
-      @branch = contents
+    data.branch.then((branchName) =>
       @clearTabs()
       @loadTabs(branchName)
     )
@@ -60,35 +58,39 @@ module.exports =
     atom.workspace.paneContainer.activePane.destroyItems()
 
   loadTabs: (branchName) ->
+    console.log 'in load tabs'
     items = @storageFolder.load('tabs.json')[branchName]
-    atom.workspace.paneContainer.activePane.addItems(items)
+    console.log items
+    for id, tab of items
+      console.log 'in here'
+      console.log tab
+      atom.workspace.paneContainer.activePane.addItem(tab)
 
   storeTabs: ->
     @git.getBranch().then (branchName) =>
-      console.log 'branch name [promise resolved]'
-      console.log branchName
-
       for tab in atom.workspace.paneContainer.activePane.items
         @storeTab(tab, branchName)
 
   handleNewTab: (tab) ->
-    @storeTab(tab)
+    @git.getBranch().then (branchName) =>
+      @storeTab(tab, branchName)
 
   handleDestroyedTab: (data) ->
-    @unstoreTab(tab)
+    @git.getBranch().then (branchName) =>
+      @unstoreTab(tab, branchName)
 
   storeTab: (tab, branchName) ->
     console.log 'store tab called'
     if (tabs = @storageFolder.load('tabs.json'))
       if not tabs[branchName]
         tabs[branchName] = {}
-      tabs[branchName][tab.id] = tab.serialize()
+      tabs[branchNamer][tab.id] = tab.serialize()
       @storageFolder.store('tabs.json', tabs)
 
-  unstoreTab: (tab) ->
+  unstoreTab: (tab, branchName) ->
     if (tabs = @storageFolder.load('tabs.json'))?.length > 0
-      if tabs[@branch]
-        delete tabs[@branch][tab.id]
+      if tabs[branchName]
+        delete tabs[branchName][tab.id]
 
   destroyPaneItem: (data) ->
     console.log 'destroying pane item'

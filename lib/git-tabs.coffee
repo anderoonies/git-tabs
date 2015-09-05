@@ -42,21 +42,16 @@ module.exports =
 
     # subscribe to tab events
     @subscriptions.add @activePane.onDidAddItem (event) =>
-      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleNewTab(event, repo.getShortHead())
+      @handleNewTab(event)
 
     @subscriptions.add @activePane.onDidChangeActiveItem (tab) =>
-      @git.getRepoForFile(@getItemPath(tab)).then (repo) =>
-        @handleChangedActiveTab(tab, repo.getShortHead())
+      @handleChangedActiveTab(tab)
 
     @subscriptions.add @activePane.onDidMoveItem (event) =>
-      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleMovedTab(event, repo.getShortHead())
+      @handleMovedTab(event)
 
     @subscriptions.add atom.workspace.onWillDestroyPaneItem (event) =>
-      # gotta copy this one so it's not destroyed
-      @git.getRepoForFile(@getItemPath(event.item)).then (repo) =>
-        @handleRemovedTab(event, repo.getShortHead())
+      @handleRemovedTab(event)
 
   deactivate: ->
     @subscriptions.dispose()
@@ -73,8 +68,11 @@ module.exports =
       @handleBranchChange(data)
 
   handleNewTab: (event, branch) ->
-    tab.active = false for tab in @tabs[branch] if tab != event.item
-    @saveTab(event.item, event.index, branch)
+    tabFilePath = @getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.getShortHead()
+      tab.active = false for tab in @tabs[branch] if tab != event.item
+      @saveTab(event.item, event.index)
 
   handleBranchChange: (data) ->
     data.branch.then((branchName) =>
@@ -84,36 +82,42 @@ module.exports =
       @loadTabs(branchName)
     )
 
-  handleRemovedTab: (event, branch) ->
+  handleRemovedTab: (event) ->
     @unsaveTab(event.item)
 
-  handleMovedTab: (event, branch) ->
-    # the user moved the tab to the left
-    if event.newIndex < event.oldIndex
-      for id, item in @tabs[branch]
-        # update the tab with its new index
-        if item.tab == event.item
-          @tabs[branch][id][index] = event.newIndex
-        # all tabs to the right have new indices
-        else if item.index > event.newIndex
-          @tabs[branch][id][index]++
-    # the user moved the tab to the right
-    else
-      for id, item in @tabs.branch
-        #update the tab with its new index
-        if item.tab == event.item
-          @tabs[branch][id][index] = event.newIndex
-        # all tabs to the right have new index
-        else if item.index > event.newIndex
-          @tabs[branch][id][index]--
-
-  handleChangedActiveTab: (tab, branch) ->
-    for id, item of @tabs[branch]
-      if +id == tab.id
-        @tabs[branch][id]['active'] = true
-        console.log 'new active tab'
+  handleMovedTab: (event) ->
+    tabFilePath = @getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.getShortHead()
+      # the user moved the tab to the left
+      if event.newIndex < event.oldIndex
+        for id, item in @tabs[branch]
+          # update the tab with its new index
+          if item.tab == event.item
+            @tabs[branch][id][index] = event.newIndex
+          # all tabs to the right have new indices
+          else if item.index > event.newIndex
+            @tabs[branch][id][index]++
+      # the user moved the tab to the right
       else
-        @tabs[branch][id]['active'] = false
+        for id, item in @tabs.branch
+          #update the tab with its new index
+          if item.tab == event.item
+            @tabs[branch][id][index] = event.newIndex
+          # all tabs to the right have new index
+          else if item.index > event.newIndex
+            @tabs[branch][id][index]--
+
+  handleChangedActiveTab: (tab) ->
+    tabFilePath = @getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.getShortHead()
+      for id, item of @tabs[branch]
+        if +id == tab.id
+          @tabs[branch][id]['active'] = true
+          console.log 'new active tab'
+        else
+          @tabs[branch][id]['active'] = false
 
   clearTabs: ->
     # kill all the tabs
@@ -146,11 +150,14 @@ module.exports =
         'active': isActive
         'tab': tab.serialize()
 
-  unsaveTab: (tab, branch) ->
-    for id, item in @tabs[branch]
-      if item.index < tab.index
-        @tabs[branch][id][index]--
-    delete @tabs[branch][tab.id]
+  unsaveTab: (tab) ->
+    tabFilePath = @getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.getShortHead()
+      for id, item in @tabs[branch]
+        if item.index < tab.index
+          @tabs[branch][id][index]--
+      delete @tabs[branch][tab.id]
 
   getItemPath: (item) ->
     return item.buffer?.file.path

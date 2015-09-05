@@ -8,7 +8,7 @@ module.exports =
   git: null
   activeSpace: null
 
-  activate: (state) ->
+  activate: ->
     @subscriptions = new CompositeDisposable
 
     # Register command that toggles this view
@@ -64,7 +64,7 @@ module.exports =
     for id, tab of items
       console.log 'in here'
       console.log tab
-      atom.workspace.paneContainer.activePane.addItem(tab)
+      atom.workspace.paneContainer.activePane.addItem(tab.deserialize())
 
   storeTabs: ->
     @git.getBranch().then (branchName) =>
@@ -80,11 +80,10 @@ module.exports =
       @unstoreTab(tab, branchName)
 
   storeTab: (tab, branchName) ->
-    console.log 'store tab called'
     if (tabs = @storageFolder.load('tabs.json'))
       if not tabs[branchName]
         tabs[branchName] = {}
-      tabs[branchNamer][tab.id] = tab.serialize()
+      tabs[branchName][tab.id] = tab.serialize()
       @storageFolder.store('tabs.json', tabs)
 
   unstoreTab: (tab, branchName) ->

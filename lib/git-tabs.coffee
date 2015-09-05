@@ -158,7 +158,7 @@ module.exports =
       for id, item in @tabs[branch]?
         if item.index < tab.index
           @tabs[branch][id][index]--
-      delete @tabs[branch][tab.id]?
+      delete @tabs[branch]?[tab.id]
 
   getItemPath: (item) ->
     return item.buffer?.file.path

@@ -79,8 +79,6 @@ module.exports =
       @storeTabs()
       @clearTabs()
       @loadTabs(branchName)
-      console.log 'check out the new tabs!'
-      console.log @tabs
     )
 
   handleRemovedTab: (event) ->

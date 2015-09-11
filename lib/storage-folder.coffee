@@ -9,10 +9,10 @@ class StorageFolder
     @path = path.join(containingPath, "storage")
 
   store: (name, object) ->
-    fs.writeFileSync(@pathForKey(name), JSON.stringify(object), 'utf8')
+    fs.writeFileSync(@pathForKey(name + '.json'), JSON.stringify(object), 'utf8')
 
   load: (name) ->
-    statePath = @pathForKey(name)
+    statePath = @pathForKey(name + '.json')
     try
       stateString = fs.readFileSync(statePath, 'utf8')
     catch error

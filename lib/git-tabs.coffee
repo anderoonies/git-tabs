@@ -1,6 +1,7 @@
 {CompositeDisposable, TextEditor} = require 'atom'
 fs = require 'fs-plus'
 git = require './git'
+path = require 'path'
 
 StorageFolder = require './storage-folder'
 
@@ -10,9 +11,13 @@ module.exports =
   git: null
   activePane: null
   tabs: null
+  projectName: null
 
   activate: ->
     @subscriptions = new CompositeDisposable
+
+    # Set up project name
+    @projectName = path.basename(atom.project.getPaths()?[0])
 
     # Register command that toggles this view
     @subscriptions.add atom.commands.add 'atom-workspace', 'git-tabs:toggle': => @toggle()
@@ -23,14 +28,13 @@ module.exports =
 
     # Set up storageFolder
     @storageFolder = new StorageFolder @getStorageDir()
-    if not fs.existsSync(@storageFolder.getPath() + '/tabs.json')
-      @storageFolder.store('tabs.json', {})
+    if not fs.existsSync(@storageFolder.getPath() + "/#{@projectName}.json")
+      @storageFolder.store(@projectName, {})
 
-
-    # Set up local cache for tabs
+    # Set up local 'cache' for tabs
     @tabs = {}
 
-    # Set up the active pane
+    # Set up the active pane shortcut
     @activePane = atom.workspace.paneContainer.activePane
 
     # Save the current tabs
@@ -43,14 +47,11 @@ module.exports =
     @subscriptions.add @activePane.onDidAddItem (event) =>
       @handleNewTab(event)
 
-    @subscriptions.add @activePane.onDidChangeActiveItem (tab) =>
-      @handleChangedActiveTab(tab)
-
     @subscriptions.add @activePane.onDidMoveItem (event) =>
       @handleMovedTab(event)
 
     @subscriptions.add atom.workspace.onWillDestroyPaneItem (event) =>
-      @handleRemovedTab(event)
+      @handleRemovedTab(event.item)
 
   deactivate: ->
     @subscriptions.dispose()
@@ -66,23 +67,20 @@ module.exports =
     @git.onDidChangeBranch (data) =>
       @handleBranchChange(data)
 
-  handleNewTab: (event, branch) ->
-    tabFilePath = @getItemPath tab
-    @git.getRepoForFile(tabFilePath).then (repo) =>
-      branch = repo.getShortHead()
-      tab.active = false for tab in @tabs[branch] if tab != event.item
-      @saveTab(event.item, event.index)
+  handleNewTab: (event) ->
+    @saveTab(event.item, event.index)
 
   handleBranchChange: (data) ->
-    data.branch.then((branchName) =>
-      console.log "switching to #{branchName}"
+    data.branch.then((head) =>
+      shortHead = path.basename(head.trim())
+      @saveTabs()
       @storeTabs()
       @clearTabs()
-      @loadTabs(branchName)
+      @loadTabs(shortHead)
     )
 
-  handleRemovedTab: (event) ->
-    @unsaveTab(event.item)
+  handleRemovedTab: (item) ->
+    @unsaveTab(item)
 
   handleMovedTab: (event) ->
     tabFilePath = @getItemPath tab
@@ -120,22 +118,24 @@ module.exports =
 
   clearTabs: ->
     # kill all the tabs
-    atom.workspace.paneContainer.activePane.destroyItems()
+    console.log 'killing'
+    atom.workspace.getActivePane()?.destroyItems()
 
   saveTabs: ->
     for tab, i in @activePane.items
       @saveTab(tab, i)
 
   storeTabs: ->
-    @storageFolder.store('tabs.json', @tabs)
+    @storageFolder.store(@projectName, @tabs)
 
   loadTabs: (branch) ->
-    @tabs = @storageFolder.load('tabs.json')
+    console.log('loading. brk here');
+    @tabs = @storageFolder.load(@projectName)
     for id, item of @tabs[branch]
       deserializedTab = atom.deserializers.deserialize item.tab
       atom.workspace.paneContainer.activePane.addItem deserializedTab, item.index
       if item.active
-        atom.workspace.paneContainer.activePane.setActiveItem tab
+        atom.workspace.paneContainer.activePane.setActiveItem(tab)
 
   saveTab: (tab, index) ->
     tabFilePath = @getItemPath tab

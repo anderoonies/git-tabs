@@ -42,6 +42,7 @@ module.exports =
     @activePane = atom.workspace.paneContainer.activePane
     
     # Load tabs if the user has already stored them in a previous session
+    @clearTabs()
     @loadTabs(@activeBranch)
 
     # Save the current tabs to cache

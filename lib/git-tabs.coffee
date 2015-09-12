@@ -16,6 +16,10 @@ module.exports =
   activeBranch: null
 
   activate: ->
+    # if there is no git repository we can be of no help
+    unless atom.project.getRepositories()[0]
+      return
+
     @subscriptions = new CompositeDisposable
 
     # Set up project name
@@ -47,6 +51,10 @@ module.exports =
     @subscribeToRepositories()
 
   deactivate: ->
+    # If this isn't true there's nothing to do
+    unless project.getRepositories()[0]
+      return
+
     # Store tabs before closing
     @storeTabs()
     # Remove all subscriptions

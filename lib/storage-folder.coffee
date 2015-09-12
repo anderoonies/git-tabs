@@ -25,5 +25,8 @@ class StorageFolder
     catch error
       console.warn "Error parsing state file: #{statePath}", error.stack, error
 
+  exists: (name) ->
+    return fs.exists(@pathForKey(name + '.json'))
+
   pathForKey: (name) -> path.join(@getPath(), name)
   getPath: -> @path

@@ -40,10 +40,11 @@ module.exports =
 
     # Set up the active pane shortcut
     @activePane = atom.workspace.paneContainer.activePane
-    
+
     # Load tabs if the user has already stored them in a previous session
-    @clearTabs()
-    @loadTabs(@activeBranch)
+    if @storageFolder.exists(@activeBranch)
+      @clearTabs()
+      @loadTabs(@activeBranch)
 
     # Save the current tabs to cache
     @saveTabs()

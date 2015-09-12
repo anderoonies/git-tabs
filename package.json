@@ -5,7 +5,6 @@
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {
-    "atom-workspace": "git-tabs:toggle"
   },
   "repository": "https://github.com/anderoonies/git-tabs",
   "license": "MIT",

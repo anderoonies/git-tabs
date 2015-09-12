@@ -21,9 +21,6 @@ module.exports =
     # Set up project name
     @projectName = path.basename(atom.project.getPaths()?[0])
 
-    # Register command that toggles this view
-    @subscriptions.add atom.commands.add 'atom-workspace', 'git-tabs:toggle': => @toggle()
-
     # Set up git stuff
     @git = git
     @git.create()
@@ -121,5 +118,3 @@ module.exports =
         if item.index < tab.index
           @tabs[branch][id][index]--
       delete @tabs[branch]?[tab.id]
-
-  toggle: ->

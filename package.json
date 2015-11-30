@@ -1,7 +1,7 @@
 {
   "name": "git-tabs",
   "main": "./lib/git-tabs",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {},
@@ -10,10 +10,11 @@
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "coffeelint": "^1.11.1",
+  "dependencies": {
     "fs-plus": "^2.8.0"
+  },
+  "devDependencies": {
+    "coffeelint": "^1.11.1"
   },
   "scripts": {}
 }

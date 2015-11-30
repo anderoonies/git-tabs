@@ -10,10 +10,11 @@
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "coffeelint": "^1.11.1",
+  "dependencies": {
     "fs-plus": "^2.8.0"
+  },
+  "devDependencies": {
+    "coffeelint": "^1.11.1"
   },
   "scripts": {}
 }

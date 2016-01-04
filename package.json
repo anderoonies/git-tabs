@@ -1,35 +1,20 @@
 {
   "name": "git-tabs",
-<<<<<<< HEAD
-  "main": "./index",
-  "version": "0.0.0",
-  "description": "A short description of your package",
-  "keywords": [
-  ],
-  "activationCommands": {
-    "atom-workspace": "git-tabs:toggle"
-  },
-=======
   "main": "./lib/git-tabs",
   "version": "0.3.0",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {},
->>>>>>> c34d77ae629082c00da8036429618a55235de489
   "repository": "https://github.com/anderoonies/git-tabs",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-<<<<<<< HEAD
-  }
-=======
     "fs-plus": "^2.8.0"
   },
   "devDependencies": {
     "coffeelint": "^1.11.1"
   },
   "scripts": {}
->>>>>>> c34d77ae629082c00da8036429618a55235de489
 }

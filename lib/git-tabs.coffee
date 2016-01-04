@@ -1,42 +1,130 @@
-GitTabsView = require './git-tabs-view'
-{CompositeDisposable} = require 'atom'
+{CompositeDisposable, TextEditor} = require 'atom'
+fs = require 'fs-plus'
+git = require './git'
+{getStorageDir, getItemPath} = require './utils'
+path = require 'path'
 
-module.exports = GitTabs =
-  gitTabsView: null
-  modalPanel: null
+StorageFolder = require './storage-folder'
+
+module.exports =
   subscriptions: null
+  repoSubscriptions: null
+  git: null
+  activePane: null
+  tabs: null
+  projectName: null
+  activeBranch: null
 
-  activate: (state) ->
-    @initRepo()
-    @gitTabsView = new GitTabsView(state.gitTabsViewState)
-    @modalPanel = atom.workspace.addModalPanel(item: @gitTabsView.getElement(), visible: false)
+  activate: ->
+    # if there is no git repository we can be of no help
+    unless atom.project.getRepositories()[0]
+      return
 
-    # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
     @subscriptions = new CompositeDisposable
 
-    # Register command that toggles this view
-    @subscriptions.add atom.commands.add 'atom-workspace', 'git-tabs:toggle': => @toggle()
+    # Set up project name
+    @projectName = path.basename(atom.project.getPaths()?[0])
+
+    # Set up git stuff
+    @git = git
+    @git.create()
+    @activeBranch = @git.getCurrentBranch()
+
+    # Set up storageFolder
+    @storageFolder = new StorageFolder getStorageDir()
+    if not fs.existsSync(@storageFolder.getPath() + "/#{@projectName}.json")
+      @storageFolder.store(@projectName, {})
+
+    # Set up local 'cache' for tabs
+    @tabs = {}
+
+    # Set up the active pane shortcut
+    @activePane = atom.workspace.paneContainer.activePane
+
+    # Load tabs if the user has already stored them in a previous session
+    if @storageFolder.exists(@activeBranch)
+      @clearTabs()
+      @loadTabs(@activeBranch)
+
+    # Save the current tabs to cache
+    @saveTabs()
+
+    # Set up git subscriptions
+    @subscribeToRepositories()
 
   deactivate: ->
-    @modalPanel.destroy()
+    # If this isn't true there's nothing to do
+    unless project.getRepositories()[0]
+      return
+
+    # Store tabs before closing
+    @storeTabs()
+    # Remove all subscriptions
     @subscriptions.dispose()
-    @gitTabsView.destroy()
+    @repoSubscriptions.dispose()
+    # Stop watching git files
+    @git.destroy()
 
-  serialize: ->
-    gitTabsViewState: @gitTabsView.serialize()
+  # Listens for a branch change
+  subscribeToRepositories: ->
+    @git.onDidChangeBranch (data) =>
+      @handleBranchChange(data)
 
-  toggle: ->
-    console.log 'GitTabs was toggled!'
+  handleNewTab: (event) ->
+    @saveTab(event.item, event.index)
 
-    if @modalPanel.isVisible()
-      @modalPanel.hide()
-    else
-      @modalPanel.show()
+  handleBranchChange: (data) ->
+    data.branch.then((head) =>
+      shortHead = path.basename(head.trim())
+      @storeTabs()
+      @clearTabs()
+      @activeBranch = shortHead
+      @loadTabs(shortHead)
+    )
 
-  initRepo: ->
-    console.log 'In initRepo!'
-    repo = atom.project.getRepo()
-    repos = atom.project.getRepositories()
-    for repo in repos
-      console.log(repo.getShortHead())
-    # console.log(repo.getShortHead())
+  handleRemovedTab: (item) ->
+    @unsaveTab(item)
+
+  # Kill all the tabs
+  clearTabs: ->
+    atom.workspace.getActivePane()?.destroyItems()
+
+  # Save all tabs to local 'cache'
+  saveTabs: ->
+    for tab, i in @activePane.items
+      @saveTab(tab, i)
+
+  # Save a tab to the local 'cache'
+  saveTab: (tab, index) ->
+    isActive = atom.workspace.getActivePaneItem() == tab
+    if not @tabs[@activeBranch]
+      @tabs[@activeBranch] = {}
+    # the item path is the most unique way to hash it.
+    @tabs[@activeBranch][getItemPath tab] =
+      'index': index
+      'active': isActive
+      'tab': tab.serialize()
+
+  # Store tabs as JSON
+  storeTabs: ->
+    @saveTabs()
+    @storageFolder.store(@projectName, @tabs)
+
+  # Load tabs from JSON
+  loadTabs: (branch) ->
+    @tabs = @storageFolder.load(@projectName)
+    for id, item of @tabs[branch]
+      deserializedTab = atom.deserializers.deserialize item.tab
+      @activePane.addItem deserializedTab, item.index
+      if item.active
+        @activePane.setActiveItem(deserializedTab)
+
+  # Remove a tab from the local 'cache'
+  unsaveTab: (tab) ->
+    tabFilePath = getItemPath tab
+    @git.getRepoForFile(tabFilePath).then (repo) =>
+      branch = repo.getShortHead()
+      for id, item in @tabs[branch]?
+        if item.index < tab.index
+          @tabs[branch][id][index]--
+      delete @tabs[branch]?[tab.id]

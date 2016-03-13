@@ -1,30 +1,28 @@
-{CompositeDisposable, TextEditor} = require 'atom'
+{CompositeDisposable, Pane} = require 'atom'
 fs = require 'fs-plus'
 git = require './git'
 Path = require 'path'
-
-# StorageFolder = require './storage-folder'
 
 module.exports =
   subscriptions: null
   repoSubscriptions: null
   git: null
   projectName: null
-  activeBranch: null
+  currentBranch: null
 
   activate: ->
     # if there is no git repository we can be of no help
     unless atom.project.getRepositories()[0]
       return
 
-    @subscriptions = new CompositeDisposable
-    @projectName = Path.basename(atom.project.getPaths()?[0])
-
     git.create()
-    @activeBranch = git.getCurrentBranch()
-
+    @currentBranch = git.getCurrentBranch()
+    @subscriptions = new CompositeDisposable
     @subscriptions.add git.onDidChangeBranch (data) =>
       @handleBranchChange(data)
+
+    @subscriptions.add atom.commands.add 'atom-workspace',
+      'git-tabs:nuke-local-storage': => @nukeLocalStorage()
 
   deactivate: ->
     # If this isn't true there's nothing to do
@@ -48,36 +46,35 @@ module.exports =
 
   handleBranchChange: (data) ->
     @storeState()
-    @clearWorkspace()
     data.branch.then((head) =>
-      @activeBranch = Path.basename(head.trim())
-      if state = @getSavedState(@activeBranch)
-        @loadState(state)
+      shortHead = Path.basename(head)
+      @currentBranch = shortHead
+      if state = @getSavedState(shortHead)
+        @updateWorkspace(state)
     )
-
-  handleRemovedTab: (item) ->
-    @uncacheTab(item)
-
-  clearWorkspace: ->
-    for pane in atom.workspace.getPaneItems()
-      atom.workspace.destroy(pane)
 
   # Store state as JSON
   storeState: ->
-    state = atom.workspace.project.serialize()
-    global.localStorage.setItem(@localStorageKey(@activeBranch), JSON.stringify(state))
+    state = {}
+    for pane, paneIndex in atom.workspace.getPanes()
+      isPaneActive = pane.isFocused()
+      state[paneIndex] = {}
+      for item, itemIndex in pane.getItems?()
+        isTabActive = (item is pane.getActiveItem())
+        state[paneIndex][itemIndex] = {
+          'isPaneActive': isPaneActive,
+          'isTabActive': isTabActive,
+          '': paneIndex,
+          'item': item.serialize()
+        }
 
-  # Load state from JSON
-  loadState: (state) ->
-    console.log 'loading state'
+    global.localStorage.setItem(@localStorageKey(@currentBranch), JSON.stringify(state))
+
+  # Deserialize state
+  updateWorkspace: (state) ->
+    console.log 'state!'
     console.log state
-    for path, item of tabs
-      deserializedTab = atom.deserializers.deserialize(item.tab)
-      console.log 'deserialzed!'
-      console.log deserializedTab
-      @activePane.addItem(deserializedTab)
-      if item.active
-        @activePane.setActiveItem(deserializedTab)
+    # atom.workspace.deserialize(state, atom.deserializers)
 
   getSavedState: (branch) ->
     return JSON.parse(global.localStorage.getItem(@localStorageKey(branch)))
@@ -86,5 +83,7 @@ module.exports =
   localStorageKey: (branch) ->
     "git-tabs:#{branch}"
 
-  getItemPath: (item) ->
-    return item.buffer?.file?.path
+  nukeLocalStorage: ->
+    for key, val of global.localStorage
+      if /git-tabs/.test(key)
+        delete(global.localStorage[key])

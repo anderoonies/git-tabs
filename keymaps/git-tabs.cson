@@ -1,1 +1,2 @@
-
+'atom-workspace':
+  'ctrl-alt-n': 'git-tabs:nuke-local-storage'

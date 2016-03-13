@@ -3,7 +3,7 @@ module.exports =
     return process.env.ATOM_HOME + '/git-tabs'
 
   getItemPath: (item) ->
-    return item.buffer?.file.path
+    return item.buffer?.file?.path
 
   getActiveItemPath: ->
     editor = atom.workspace.getActivePane()

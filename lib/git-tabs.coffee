@@ -55,29 +55,41 @@ module.exports =
 
   # Store state as JSON
   storeState: ->
-    state = {}
+    console.log 'storing state'
+    state = []
     for pane, paneIndex in atom.workspace.getPanes()
       isPaneActive = pane.isFocused()
-      state[paneIndex] = {}
-      for item, itemIndex in pane.getItems?()
-        isTabActive = (item is pane.getActiveItem())
-        state[paneIndex][itemIndex] = {
-          'isPaneActive': isPaneActive,
-          'isTabActive': isTabActive,
-          '': paneIndex,
-          'item': item.serialize()
-        }
+      paneState = []
+      for item in pane.getItems?()
+        serializedItem = item.serialize()
+        paneState.push(serializedItem)
+      state.push(paneState)
 
     global.localStorage.setItem(@localStorageKey(@currentBranch), JSON.stringify(state))
 
   # Deserialize state
   updateWorkspace: (state) ->
-    console.log 'state!'
-    console.log state
+    for pane in atom.workspace.getPanes()
+      pane.destroy()
+
+    console.log 'update'
+    for paneState, paneIndex in state
+      pane = @getLastPane()
+      if paneIndex > atom.workspace.getPanes().length
+        pane = pane.splitRight()
+      for item, itemIndex in paneState
+        deserializedItem = atom.deserializers.deserialize(item)
+        pane.addItem(deserializedItem, itemIndex)
+
+
     # atom.workspace.deserialize(state, atom.deserializers)
 
   getSavedState: (branch) ->
     return JSON.parse(global.localStorage.getItem(@localStorageKey(branch)))
+
+  getLastPane: ->
+    panes = atom.workspace.getPanes()
+    return panes[panes.length - 1]
 
   # Get the name for the localStorage
   localStorageKey: (branch) ->

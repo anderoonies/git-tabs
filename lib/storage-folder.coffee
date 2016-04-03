@@ -5,28 +5,28 @@ fs = require "fs-plus"
 
 module.exports =
 class StorageFolder
-  constructor: (containingPath) ->
-    @path = path.join(containingPath, "storage")
 
   store: (name, object) ->
-    fs.writeFileSync(@pathForKey(name + '.json'), JSON.stringify(object), 'utf8')
+    @projectName = path.basename(atom.project.getPaths()?[0])
+    branchedName = [@projectName, name].join('-')
+
+    if object
+      delete object["undefined"]
+      localStorage.setItem(branchedName, JSON.stringify(object))
 
   load: (name) ->
-    statePath = @pathForKey(name + '.json')
+    @projectName = path.basename(atom.project.getPaths()?[0])
+    branchedName = [@projectName, name].join('-')
+    retrievedItem = null
+
     try
-      stateString = fs.readFileSync(statePath, 'utf8')
+      retrievedItem = localStorage.getItem(branchedName)
     catch error
       unless error.code is 'ENOENT'
-        console.warn "Error reading state file: #{statePath}", error.stack, error
+        console.warn "Local storage could not find an element for: #{branchedName}", error.stack, error
       return undefined
 
     try
-      JSON.parse(stateString)
+      return JSON.parse(retrievedItem)
     catch error
-      console.warn "Error parsing state file: #{statePath}", error.stack, error
-
-  exists: (name) ->
-    return fs.exists(@pathForKey(name + '.json'))
-
-  pathForKey: (name) -> path.join(@getPath(), name)
-  getPath: -> @path
+      console.warn "Error parsing retrieved item: #{retrievedItem}", error.stack, error

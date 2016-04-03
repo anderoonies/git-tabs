@@ -1,11 +1,11 @@
 {
   "name": "git-tabs",
   "main": "./lib/git-tabs",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {},
-  "repository": "https://github.com/anderoonies/git-tabs",
+  "repository": "https://github.com/lucaspadovan/git-tabs",
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"

@@ -96,7 +96,8 @@ module.exports =
   # Save all tabs to local 'cache'
   saveTabs: ->
     @tabs[@activeBranch] = {}
-    for tab, i in @activePane.items
+    tabs = atom.workspace.paneContainer.getPaneItems()
+    for tab, i in tabs
       @saveTab(tab, i)
 
   # Save a tab to the local 'cache'

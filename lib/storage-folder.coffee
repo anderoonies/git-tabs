@@ -12,7 +12,11 @@ class StorageFolder
 
     if object
       delete object["undefined"]
-      localStorage.setItem(branchedName, JSON.stringify(object))
+      stringifiedObject = JSON.stringify(object)
+      if stringifiedObject == "{}"
+        localStorage.removeItem(branchedName)
+      else
+        localStorage.setItem(branchedName, stringifiedObject)
 
   load: (name) ->
     @projectName = path.basename(atom.project.getPaths()?[0])

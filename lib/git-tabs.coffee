@@ -133,7 +133,8 @@ module.exports =
           @tabs[branch][id][index]--
       delete @tabs[branch]?[tab.id]
 
-  # Set the correct active tab
+  # Set the correct active tab.
+  # Still not working because Atom has little to none management of this available (or haven't found it yet)
   setActiveTab: ->
     # activeTab = atom.workspace.paneContainer.activePane.itemAtIndex(@activeTabIndex)
     # @activePane.setActiveItem(activeTab)

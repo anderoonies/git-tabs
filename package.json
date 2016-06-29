@@ -1,7 +1,7 @@
 {
   "name": "git-tabs",
   "main": "./lib/git-tabs",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Preserve your tabs on a per-branch and per-repo basis",
   "keywords": [],
   "activationCommands": {},

@@ -31,20 +31,23 @@ module.exports =
     @activeBranch = @git.getCurrentBranch()
 
     # Set up storageFolder
-    @storageFolder = new StorageFolder getStorageDir()
-    if not fs.existsSync(@storageFolder.getPath() + "/#{@projectName}.json")
-      @storageFolder.store(@projectName, {})
+    @storageFolder = new StorageFolder
+    @branchTabsName = [@projectName, @activeBranch].join('-')
 
     # Set up local 'cache' for tabs
     @tabs = {}
 
     # Set up the active pane shortcut
     @activePane = atom.workspace.paneContainer.activePane
+    @activeTabIndex = 0
 
     # Load tabs if the user has already stored them in a previous session
-    if @storageFolder.exists(@activeBranch)
+    @storedBranchTabs = @storageFolder.load(@activeBranch)
+    if @storedBranchTabsName
       @clearTabs()
       @loadTabs(@activeBranch)
+
+    @setActiveTab()
 
     # Save the current tabs to cache
     @saveTabs()
@@ -69,6 +72,7 @@ module.exports =
   subscribeToRepositories: ->
     @git.onDidChangeBranch (data) =>
       @handleBranchChange(data)
+      @setActiveTab()
 
   handleNewTab: (event) ->
     @saveTab(event.item, event.index)
@@ -91,33 +95,33 @@ module.exports =
 
   # Save all tabs to local 'cache'
   saveTabs: ->
-    for tab, i in @activePane.items
+    @tabs[@activeBranch] = {}
+    tabs = atom.workspace.paneContainer.getPaneItems()
+    for tab, i in tabs
       @saveTab(tab, i)
 
   # Save a tab to the local 'cache'
   saveTab: (tab, index) ->
     isActive = atom.workspace.getActivePaneItem() == tab
-    if not @tabs[@activeBranch]
-      @tabs[@activeBranch] = {}
     # the item path is the most unique way to hash it.
     @tabs[@activeBranch][getItemPath tab] =
       'index': index
       'active': isActive
-      'tab': tab.serialize()
 
   # Store tabs as JSON
   storeTabs: ->
     @saveTabs()
-    @storageFolder.store(@projectName, @tabs)
+    @storageFolder.store(@activeBranch, @tabs[@activeBranch])
 
   # Load tabs from JSON
   loadTabs: (branch) ->
-    @tabs = @storageFolder.load(@projectName)
+    @tabs[branch] = @storageFolder.load(branch)
+    workspace = atom.workspace
+
     for id, item of @tabs[branch]
-      deserializedTab = atom.deserializers.deserialize item.tab
-      @activePane.addItem deserializedTab, item.index
+      workspace.open(id)
       if item.active
-        @activePane.setActiveItem(deserializedTab)
+        @activeTabIndex = item.index
 
   # Remove a tab from the local 'cache'
   unsaveTab: (tab) ->
@@ -128,3 +132,9 @@ module.exports =
         if item.index < tab.index
           @tabs[branch][id][index]--
       delete @tabs[branch]?[tab.id]
+
+  # Set the correct active tab.
+  # Still not working because Atom has little to none management of this available (or haven't found it yet)
+  setActiveTab: ->
+    # activeTab = atom.workspace.paneContainer.activePane.itemAtIndex(@activeTabIndex)
+    # @activePane.setActiveItem(activeTab)
